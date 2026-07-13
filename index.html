@@ -170,8 +170,6 @@ a.mailbtn.big{font-size:12.5px;padding:7px 13px;border-radius:7px}
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="./config.js"></script>
 <script>
 /* ============ CONSTANTS ============ */
 const DAY = 86400000;
@@ -288,16 +286,35 @@ function reminderMailto(docs){
 }
 
 
-/* ============ SUPABASE CLOUD ============ */
-const sb = supabase.createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseAnonKey);
-const WORKSPACE_ID = APP_CONFIG.workspaceId || "winnerhc-main";
+/* ============ CPANEL PHP + MYSQL CLOUD ============ */
+const WORKSPACE_ID = "winnerhc-main";
 let cloudReady = false;
 let saveTimer = null;
 let applyingRemote = false;
-let cloudChannel = null;
+let refreshTimer = null;
+let csrfToken = "";
 
-const authEmail = username =>
-  `${String(username||"").trim().toLowerCase()}@${APP_CONFIG.authDomain || "winnerhc.local"}`;
+async function api(path, options = {}){
+  const opts = {
+    method: options.method || "GET",
+    credentials: "same-origin",
+    headers: {...(options.headers || {})}
+  };
+  if(options.body !== undefined){
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(options.body);
+  }
+  if(csrfToken && opts.method !== "GET"){
+    opts.headers["X-CSRF-Token"] = csrfToken;
+  }
+  const res = await fetch("./api/" + path, opts);
+  let data = null;
+  try { data = await res.json(); }
+  catch(e){ throw new Error("Invalid server response (" + res.status + ")."); }
+  if(data && data.csrf) csrfToken = data.csrf;
+  if(!res.ok || data?.ok === false) throw new Error(data?.error || ("Request failed (" + res.status + ")."));
+  return data;
+}
 
 function businessState(){
   const {users, ...data} = state;
@@ -327,41 +344,27 @@ function normalizeCloudState(data){
 }
 
 async function loadProfiles(){
-  const {data, error} = await sb.from("profiles")
-    .select("id, full_name, username, role, perms")
-    .eq("workspace_id", WORKSPACE_ID)
-    .order("full_name");
-  if(error) throw error;
-  state.users = (data||[]).map(u=>({
-    id:u.id,
-    fullName:u.full_name,
-    user:u.username,
-    role:u.role,
-    perms:u.role==="Admin" ? [...ALL_PERMS] : (u.perms||[])
+  const result = await api("users.php");
+  state.users = (result.users || []).map(u=>({
+    id:String(u.id), fullName:u.full_name, user:u.username, role:u.role,
+    perms:u.role==="Admin" ? [...ALL_PERMS] : (u.perms || [])
   }));
 }
 
 async function loadCloudState(){
-  const {data, error} = await sb.from("workspace_state")
-    .select("data")
-    .eq("workspace_id", WORKSPACE_ID)
-    .single();
-  if(error) throw error;
-
+  const result = await api("workspace.php");
   const users = state.users || [];
-  const remote = normalizeCloudState(data.data);
+  const remote = normalizeCloudState(result.data);
   state = {...remote, users};
 }
 
 async function saveCloudNow(){
   if(!cloudReady || applyingRemote || !session) return;
-  const payload = businessState();
-  const {error} = await sb.from("workspace_state")
-    .update({data:payload, updated_at:new Date().toISOString()})
-    .eq("workspace_id", WORKSPACE_ID);
-  if(error){
-    console.error(error);
-    toast("Cloud save failed. Check connection.");
+  try{
+    await api("workspace.php", {method:"POST", body:{data:businessState()}});
+  }catch(err){
+    console.error(err);
+    toast("Central save failed. Check server connection.");
   }
 }
 
@@ -381,19 +384,13 @@ async function refreshFromCloud(){
     if(fresh) session = fresh;
     renderNav();
     renderQueue(); renderDash(); renderTasks(); renderRec(); renderExpiry(); renderKPI(); renderMaster(); renderSettings();
-  }catch(err){
-    console.error(err);
-  }finally{
-    applyingRemote = false;
-  }
+  }catch(err){ console.error(err); }
+  finally{ applyingRemote = false; }
 }
 
 function startRealtime(){
-  if(cloudChannel) sb.removeChannel(cloudChannel);
-  cloudChannel = sb.channel("winnerhc-cloud-"+WORKSPACE_ID)
-    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"workspace_state",filter:`workspace_id=eq.${WORKSPACE_ID}`},()=>refreshFromCloud())
-    .on("postgres_changes",{event:"*",schema:"public",table:"profiles",filter:`workspace_id=eq.${WORKSPACE_ID}`},()=>refreshFromCloud())
-    .subscribe();
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(()=>refreshFromCloud(), 5000);
 }
 
 /* ============ LOGIN ============ */
@@ -401,36 +398,22 @@ async function doLogin(){
   const u = document.getElementById('lg-user').value.trim().toLowerCase();
   const p = document.getElementById('lg-pass').value;
   document.getElementById('lg-err').textContent = '';
-
   if(!u || !p){
     document.getElementById('lg-err').textContent = 'Enter username and password.';
     return;
   }
-
-  const {data:authData, error:authError} = await sb.auth.signInWithPassword({
-    email: authEmail(u),
-    password: p
-  });
-
-  if(authError){
-    document.getElementById('lg-err').textContent = 'Invalid username or password.';
-    document.getElementById('lg-pass').value = '';
-    return;
-  }
-
   try{
+    const result = await api("login.php", {method:"POST", body:{username:u, password:p}});
+    csrfToken = result.csrf || csrfToken;
     await loadProfiles();
-    const match = state.users.find(x=>x.id===authData.user.id && x.user.toLowerCase()===u);
+    const match = state.users.find(x=>x.id===String(result.user.id) && x.user.toLowerCase()===u);
     if(!match) throw new Error("No active profile found for this user.");
-
     session = match;
     await loadCloudState();
     cloudReady = true;
-
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'block';
     document.getElementById('whoLbl').textContent = 'Signed in: '+(session.fullName || session.user)+' ('+session.role+')';
-
     renderNav();
     applyingRemote = true;
     renderQueue(); renderDash(); renderTasks(); renderRec(); renderExpiry(); renderKPI(); renderMaster(); renderSettings();
@@ -439,17 +422,19 @@ async function doLogin(){
     showTab(myTabs()[0]);
   }catch(err){
     console.error(err);
-    await sb.auth.signOut();
     session = null;
-    document.getElementById('lg-err').textContent = err.message || 'Unable to load cloud workspace.';
+    document.getElementById('lg-err').textContent = err.message || 'Unable to login.';
+    document.getElementById('lg-pass').value = '';
   }
 }
 
 async function logout(){
   cloudReady = false;
   session = null;
-  if(cloudChannel){ await sb.removeChannel(cloudChannel); cloudChannel=null; }
-  await sb.auth.signOut();
+  clearInterval(refreshTimer);
+  refreshTimer = null;
+  try{ await api("logout.php", {method:"POST", body:{}}); }catch(e){}
+  csrfToken = "";
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('lg-pass').value = '';
@@ -1414,9 +1399,9 @@ function renderSettings(){
     </div>
 
     <div class="card" style="margin-top:14px"><h3>Data storage</h3>
-      <p style="font-size:13px;margin-bottom:10px">Tasks, recruitment, expiry data and settings auto-save to the shared cloud workspace. Users on different computers see the same central data. Export data remains available as a manual backup.</p>
+      <p style="font-size:13px;margin-bottom:10px">Tasks, recruitment, expiry data and settings auto-save to the shared central workspace. Users on different computers see the same central data. Export data remains available as a manual backup.</p>
       <button class="btn danger" onclick="resetData()">Clear saved data &amp; restore samples</button>
-      <p class="section-note">Cloud sync is enabled. The Master Dashboard consolidates shared task data from all logged-in users.</p>
+      <p class="section-note">Central MySQL sync is enabled. The Master Dashboard consolidates shared task data from all logged-in users.</p>
     </div>`;
 }
 function isAdmin(){ return session && session.role === "Admin"; }
@@ -1426,76 +1411,46 @@ async function addUser(){
   const pass = document.getElementById('nu-pass').value;
   const role = document.getElementById('nu-role').value;
   const perms = [...document.querySelectorAll('.nu-perm:checked')].map(c=>c.value);
-
   if(!isAdmin()){ toast("Only an Admin can add users."); return; }
   if(!fullName || !user || !pass){ toast("Full name, username and password are required."); return; }
   if(!/^[a-z0-9._-]+$/.test(user)){ toast("Username can use letters, numbers, dot, underscore and hyphen only."); return; }
   if(pass.length < 8){ toast("Password must be at least 8 characters."); return; }
   if(state.users.some(u=>u.user.toLowerCase()===user)){ toast("That username already exists."); return; }
   if(role==="Member" && !perms.length){ toast("Give the Member access to at least one tab."); return; }
-
-  const {data, error} = await sb.functions.invoke("manage-user", {
-    body:{
-      action:"create",
-      workspaceId:WORKSPACE_ID,
-      fullName,
-      username:user,
-      password:pass,
-      role,
-      perms:role==="Admin" ? [...ALL_PERMS] : perms
-    }
-  });
-
-  if(error || !data?.ok){
-    console.error(error || data);
-    toast(data?.error || "Unable to create user.");
-    return;
-  }
-
-  await refreshFromCloud();
-  toast(fullName+" ("+user+") added.");
-  showTab('settings');
+  try{
+    await api("users.php", {method:"POST", body:{action:"create", fullName, username:user, password:pass, role, perms:role==="Admin" ? [...ALL_PERMS] : perms}});
+    await refreshFromCloud();
+    toast(fullName+" ("+user+") added.");
+    showTab('settings');
+  }catch(err){ console.error(err); toast(err.message || "Unable to create user."); }
 }
 
 async function togglePerm(username, tab, allowed){
   if(!isAdmin()){ toast("Only an Admin can change access."); return; }
   const u = state.users.find(x=>x.user===username); if(!u) return;
-
   let perms = [...(u.perms||[])];
   if(allowed){ if(!perms.includes(tab)) perms.push(tab); }
   else perms = perms.filter(p=>p!==tab);
-
-  const {error} = await sb.from("profiles").update({perms}).eq("id",u.id);
-  if(error){ console.error(error); toast("Permission update failed."); return; }
-
-  u.perms = perms;
-  toast(username+" — "+(TABS.find(t=>t.id===tab)||{}).label+" "+(allowed?"allowed":"removed")+".");
+  try{
+    await api("users.php", {method:"POST", body:{action:"permissions", userId:u.id, perms}});
+    u.perms = perms;
+    toast(username+" — "+(TABS.find(t=>t.id===tab)||{}).label+" "+(allowed?"allowed":"removed")+".");
+  }catch(err){ console.error(err); toast(err.message || "Permission update failed."); await refreshFromCloud(); }
 }
 
 async function removeUser(username){
   if(!isAdmin()){ toast("Only an Admin can remove users."); return; }
   if(session && username===session.user){ toast("You can't remove your own account while signed in."); return; }
-
   const target = state.users.find(u=>u.user===username);
   if(!target) return;
-  if(target.role==="Admin" && state.users.filter(u=>u.role==="Admin").length<=1){
-    toast("Can't remove the last Admin."); return;
-  }
+  if(target.role==="Admin" && state.users.filter(u=>u.role==="Admin").length<=1){ toast("Can't remove the last Admin."); return; }
   if(!confirm('Remove user "'+username+'"?')) return;
-
-  const {data, error} = await sb.functions.invoke("manage-user", {
-    body:{action:"delete", workspaceId:WORKSPACE_ID, userId:target.id}
-  });
-
-  if(error || !data?.ok){
-    console.error(error || data);
-    toast(data?.error || "Unable to remove user.");
-    return;
-  }
-
-  await refreshFromCloud();
-  toast("User '"+username+"' removed.");
-  showTab('settings');
+  try{
+    await api("users.php", {method:"POST", body:{action:"delete", userId:target.id}});
+    await refreshFromCloud();
+    toast("User '"+username+"' removed.");
+    showTab('settings');
+  }catch(err){ console.error(err); toast(err.message || "Unable to remove user."); }
 }
 
 function saveSettings(){
@@ -1514,14 +1469,12 @@ async function saveAuth(){
   const pass = document.getElementById('st-pass').value;
   if(!pass){ toast("Enter a new password."); return; }
   if(pass.length < 8){ toast("Password must be at least 8 characters."); return; }
-
-  const {error} = await sb.auth.updateUser({password:pass});
-  if(error){ console.error(error); toast("Password update failed."); return; }
-
-  document.getElementById('st-pass').value = "";
-  toast("Password updated.");
-  renderSettings();
-  showTab('settings');
+  try{
+    await api("password.php", {method:"POST", body:{password:pass}});
+    document.getElementById('st-pass').value = "";
+    toast("Password updated.");
+    renderSettings(); showTab('settings');
+  }catch(err){ console.error(err); toast(err.message || "Password update failed."); }
 }
 
 /* ============ KPI / MIS ============ */
@@ -1738,9 +1691,9 @@ function importData(ev){
 /* ============ CLOUD BACKUP / RESET ============ */
 async function resetData(){
   if(!isAdmin()){ toast("Only an Admin can reset workspace data."); return; }
-  if(!confirm("Reset shared cloud workspace data to the sample data currently loaded? This affects all users.")) return;
+  if(!confirm("Reset shared central workspace data to the sample data currently loaded? This affects all users.")) return;
   await saveCloudNow();
-  toast("Cloud workspace saved.");
+  toast("Central workspace saved.");
 }
 
 /* ============ BOOT ============ */
