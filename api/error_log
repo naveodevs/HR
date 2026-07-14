@@ -1,0 +1,36 @@
+[13-Jul-2026 18:40:19 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:19 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:19 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php' (include_path='.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php') in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:27 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:27 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:27 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php' (include_path='.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php') in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:43 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:43 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:43 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php' (include_path='.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php') in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:43 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:43 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:43 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php' (include_path='.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php') in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:44 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:44 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php' (include_path='.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php') in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:44 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:44 UTC] PHP Warning:  require(/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php): Failed to open stream: No such file or directory in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
+[13-Jul-2026 18:40:44 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/hazrkhk3b2ip/public_html/HR/api/PHPMailer/src/Exception.php' (include_path='.:/opt/alt/php81/usr/share/pear:/opt/alt/php81/usr/share/php:/usr/share/pear:/usr/share/php') in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php:8
+Stack trace:
+#0 {main}
+  thrown in /home/hazrkhk3b2ip/public_html/HR/api/send_reminder.php on line 8
